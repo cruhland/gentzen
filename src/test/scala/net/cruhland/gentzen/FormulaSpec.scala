@@ -4,6 +4,7 @@ import org.scalatest._
 import prop._
 import org.scalacheck._
 import Arbitrary.arbitrary
+import Shrink.shrink
 
 class FormulaSpec extends PropSpec with PropertyChecks {
 
@@ -11,8 +12,21 @@ class FormulaSpec extends PropSpec with PropertyChecks {
 
   property("rendering a formula") {
     forAll { (formulaModel: FormulaModel) =>
-      assertResult(renderModel(formulaModel)) {
-        convertModel(formulaModel).render
+      whenever (isValidFormulaModel(formulaModel)) {
+        assertResult(renderModel(formulaModel)) {
+          convertModel(formulaModel).render
+        }
+      }
+    }
+  }
+
+  property("parsing is the inverse of rendering") {
+    forAll { (formulaModel: FormulaModel) =>
+      whenever (isValidFormulaModel(formulaModel)) {
+        val formula = convertModel(formulaModel)
+        assertResult(Right(formula)) {
+          Formula.parse(formula.render)
+        }
       }
     }
   }
@@ -26,6 +40,17 @@ object FormulaSpec {
   case class GroupModel(
     fm1: FormulaModel, fm2: FormulaModel, fms: List[FormulaModel]
   ) extends FormulaModel
+
+  def isValidFormulaModel(formulaModel: FormulaModel): Boolean = {
+    formulaModel match {
+      case AtomModel("") => false
+      case AtomModel(name) =>
+        name.forall(c => !(c == ' ' || c == '(' || c == ')'))
+      case GroupModel(fm1, fm2, fms) =>
+        isValidFormulaModel(fm1) && isValidFormulaModel(fm2) &&
+          fms.map(isValidFormulaModel).reduceOption(_ && _).getOrElse(true)
+    }
+  }
 
   def genAtomModel: Gen[AtomModel] = {
     arbitrary[String].flatMap(AtomModel.apply)
@@ -50,6 +75,16 @@ object FormulaSpec {
 
   implicit val arbFormulaModel: Arbitrary[FormulaModel] = {
     Arbitrary(Gen.sized(genFormulaModel))
+  }
+
+  implicit val shrinkFormulaModel: Shrink[FormulaModel] = Shrink {
+    fm => fm match {
+      case AtomModel(name) => shrink(name).map(AtomModel.apply)
+      case GroupModel(fm1, fm2, fms) =>
+        shrink(fm1).map(GroupModel(_, fm2, fms)) ++
+          shrink(fm2).map(GroupModel(fm1, _, fms)) ++
+          shrink(fms).map(GroupModel(fm1, fm2, _))
+    }
   }
 
   def convertModel(fm: FormulaModel): Formula = {
