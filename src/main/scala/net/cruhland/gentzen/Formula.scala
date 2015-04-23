@@ -26,32 +26,52 @@ object Formula {
     }
   }
 
-  type GeneralParser[S, A] = S => Either[String, (S, A)]
+  case class GeneralParser[S, A](f: S => Either[String, (S, A)]) {
+
+    def apply(medium: S): Either[String, (S, A)] = f(medium)
+
+    def map[B](g: A => B): GeneralParser[S, B] = {
+      GeneralParser(s => f(s).right map { case (s1, a) => (s1, g(a)) })
+    }
+
+    def flatMap[B](g: A => GeneralParser[S, B]): GeneralParser[S, B] = {
+      GeneralParser { s =>
+        f(s) match {
+          case Right((s1, a)) => g(a)(s1)
+          case Left(message) => Left(message)
+        }
+      }
+    }
+
+  }
+
   type Parser[A] = GeneralParser[List[Char], A]
 
-  private def formulaSeqParser: Parser[List[Formula]] = {
-    (chars: List[Char]) =>
-      formulaParser(chars) match {
-        case Right((cs1, firstFormula)) =>
-          zeroOrMore(followingFormulaParser)(cs1) match {
-            case Right((cs2, followingFormulas)) =>
-              Right((cs2, firstFormula :: followingFormulas))
-            case Left(message) => Left("formulaSeqParser: " + message)
-          }
-        case Left(message) => Left("formulaSeqParser: " + message)
+  private def char(v: Char): Parser[Char] = {
+    GeneralParser { (chars: List[Char]) =>
+      chars match {
+        case c :: cs if c == v => Right((cs, c))
+        case _ => Left("expected char '" + v + "'")
       }
+    }
+  }
+
+  private def formulaSeqParser: Parser[List[Formula]] = {
+    for {
+      firstFormula <- formulaParser
+      followingFormulas <- zeroOrMore(followingFormulaParser)
+    } yield firstFormula :: followingFormulas
   }
 
   private def followingFormulaParser: Parser[Formula] = {
-    (chars: List[Char]) =>
-      chars match {
-        case ' ' :: cs1 => formulaParser(cs1)
-        case _ => Left("followingFormulaParser: missing space")
-      }
+    for {
+      _ <- char(' ')
+      formula <- formulaParser
+    } yield formula
   }
 
   private def zeroOrMore[A](parser: Parser[A]): Parser[List[A]] = {
-    (chars: List[Char]) =>
+    GeneralParser { (chars: List[Char]) =>
       parser(chars) match {
         case Right((cs1, parsedValue)) =>
           zeroOrMore(parser)(cs1) match {
@@ -61,47 +81,38 @@ object Formula {
           }
         case _ => Right((chars, Nil))
       }
-  }
-
-  private def formulaParser: Parser[Formula] = { (chars: List[Char]) =>
-    groupParser(chars) match {
-      case Left(_) => atomParser(chars)
-      case r => r
     }
   }
 
-  private def atomParser: Parser[Atom] = { (chars: List[Char]) =>
-    val (atomChars, remainingChars) = chars.span(isAtomChar)
-    if (atomChars.isEmpty) Left("atomParser: need at least one char")
-    else Right((remainingChars, Atom(atomChars.mkString)))
+  private def formulaParser: Parser[Formula] = {
+    GeneralParser { (chars: List[Char]) =>
+      groupParser(chars) match {
+        case Left(_) => atomParser(chars)
+        case r => r
+      }
+    }
+  }
+
+  private def atomParser: Parser[Atom] = {
+    GeneralParser { (chars: List[Char]) =>
+      val (atomChars, remainingChars) = chars.span(isAtomChar)
+      if (atomChars.isEmpty) Left("atomParser: need at least one char")
+      else Right((remainingChars, Atom(atomChars.mkString)))
+    }
   }
 
   private def isAtomChar(c: Char): Boolean = {
     !(c == ' ' || c == '(' || c == ')')
   }
 
-  private def groupParser: Parser[Group] = { (chars: List[Char]) =>
-    chars match {
-      case '(' :: cs1 =>
-        formulaParser(cs1) match {
-          case Right((cs2, firstFormula)) =>
-            cs2 match {
-              case ' ' :: cs3 =>
-                formulaSeqParser(cs3) match {
-                  case Right((cs4, otherFormulas)) =>
-                    cs4 match {
-                      case ')' :: cs5 =>
-                        Right((cs5, Group(firstFormula :: otherFormulas)))
-                      case _ => Left("groupParser: `)` expected")
-                    }
-                  case Left(message) => Left("groupParser: " + message)
-                }
-              case _ => Left("groupParser: space expected")
-            }
-          case Left(message) => Left("groupParser: " + message)
-        }
-      case _ => Left("groupParser: `(` expected")
-    }
+  private def groupParser: Parser[Group] = {
+    for {
+      _ <- char('(')
+      firstFormula <- formulaParser
+      _ <- char(' ')
+      otherFormulas <- formulaSeqParser
+      _ <- char(')')
+    } yield Group(firstFormula :: otherFormulas)
   }
 
   private def renderInto(f: Formula, target: Growable[Char]): Unit = {

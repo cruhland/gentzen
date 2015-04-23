@@ -1,4 +1,3 @@
-- Get rid of nested parser match expressions using monads
 - `Formula` modeling questions
   - Should attempting to create a `Formula`/`FormulaModel` produce errors if
     invalid characters are provided?
@@ -12,3 +11,4 @@
 - Forbid nonprintable characters in formulas
 - Clean up result type of parser and write tests for parsing failures
 - Reduce code duplication
+- Switch to using Scala's parser combinators
