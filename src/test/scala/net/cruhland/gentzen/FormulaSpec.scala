@@ -10,23 +10,110 @@ class FormulaSpec extends PropSpec with PropertyChecks {
 
   import FormulaSpec._
 
-  property("rendering a formula") {
-    forAll { (formulaModel: FormulaModel) =>
-      whenever (isValidFormulaModel(formulaModel)) {
-        assertResult(renderModel(formulaModel)) {
-          convertModel(formulaModel).render
+  property("[Atom.build()] empty name") {
+    assertResult(None) {
+      Atom.build("")
+    }
+  }
+
+  property("[Atom.build()] names with invalid chars") {
+    forAll(genStringContainingAnyOf(InvalidNameChars)) { (name: String) =>
+      whenever(!isValidName(name)) {
+        assertResult(None) {
+          Atom.build(name)
         }
       }
     }
   }
 
-  property("parsing is the inverse of rendering") {
-    forAll { (formulaModel: FormulaModel) =>
-      whenever (isValidFormulaModel(formulaModel)) {
-        val formula = convertModel(formulaModel)
-        assertResult(Right(formula)) {
-          Formula.parse(formula.render)
+  property("[Atom.build()] names without invalid chars") {
+    forAll { (name: String) =>
+      whenever(isValidName(name)) {
+        assertResult(Some(name)) {
+          Atom.build(name).map(_.name)
         }
+      }
+    }
+  }
+
+  property("[Atom.buildWithoutValidation()] empty name") {
+    assertResult("") {
+      Atom.buildWithoutValidation("").name
+    }
+  }
+
+  property("[Atom.buildWithoutValidation()] names with invalid chars") {
+    forAll(genStringContainingAnyOf(InvalidNameChars)) { (name: String) =>
+      whenever(!isValidName(name)) {
+        assertResult(name) {
+          Atom.buildWithoutValidation(name).name
+        }
+      }
+    }
+  }
+
+  property("[Atom.buildWithoutValidation()] names without invalid chars") {
+    forAll { (name: String) =>
+      whenever(isValidName(name)) {
+        assertResult(name) {
+          Atom.buildWithoutValidation(name).name
+        }
+      }
+    }
+  }
+
+  property("[Group.build()] less than two children") {
+    forAll { (formulaOpt: Option[Formula]) =>
+      // Don't need `whenever` here; shrinks will preserve the condition
+      assertResult(None) {
+        Group.build(formulaOpt)
+      }
+    }
+  }
+
+  property("[Group.build()] two or more children") {
+    forAll { (formulas: List[Formula]) =>
+      whenever(formulas.size >= 2) {
+        assertResult(Some(formulas)) {
+          Group.build(formulas).map(_.children)
+        }
+      }
+    }
+  }
+
+  property("[Group.buildWithoutValidation()] less than two children") {
+    forAll { (formulaOpt: Option[Formula]) =>
+      // Don't need `whenever` here; shrinks will preserve the condition
+      assertResult(formulaOpt.toSeq) {
+        Group.buildWithoutValidation(formulaOpt).children
+      }
+    }
+  }
+
+  property("[Group.buildWithoutValidation()] two or more children") {
+    forAll { (formulas: List[Formula]) =>
+      whenever(formulas.size >= 2) {
+        assertResult(formulas) {
+          Group.buildWithoutValidation(formulas).children
+        }
+      }
+    }
+  }
+
+  property("[Formula.render()] definition") {
+    forAll { (formula: Formula) =>
+      // Don't need `whenever` here; gens and shrinks for `Formula` are valid
+      assertResult(declarativeRender(formula)) {
+        formula.render
+      }
+    }
+  }
+
+  property("[Formula.parse()] inverse of rendering") {
+    forAll { (formula: Formula) =>
+      // Don't need `whenever` here; gens and shrinks for `Formula` are valid
+      assertResult(Right(formula)) {
+        Formula.parse(formula.render)
       }
     }
   }
@@ -35,79 +122,65 @@ class FormulaSpec extends PropSpec with PropertyChecks {
 
 object FormulaSpec {
 
-  sealed trait FormulaModel
-  case class AtomModel(name: String) extends FormulaModel
-  case class GroupModel(
-    fm1: FormulaModel, fm2: FormulaModel, fms: List[FormulaModel]
-  ) extends FormulaModel
+  val InvalidNameChars: Set[Char] = Set(' ', '(', ')')
 
-  def isValidFormulaModel(formulaModel: FormulaModel): Boolean = {
-    formulaModel match {
-      case AtomModel("") => false
-      case AtomModel(name) =>
-        name.forall(c => !(c == ' ' || c == '(' || c == ')'))
-      case GroupModel(fm1, fm2, fms) =>
-        isValidFormulaModel(fm1) && isValidFormulaModel(fm2) &&
-          fms.map(isValidFormulaModel).reduceOption(_ && _).getOrElse(true)
-    }
+  def isValidName(name: String): Boolean = {
+    name.nonEmpty && !name.exists(InvalidNameChars)
   }
 
-  def genAtomModel: Gen[AtomModel] = {
-    arbitrary[String].flatMap(AtomModel.apply)
-  }
-
-  def genGroupModel(size: Int): Gen[GroupModel] = {
+  def genAtom: Gen[Atom] = {
+    val genValidChar = arbitrary[Char].suchThat(!InvalidNameChars(_))
     for {
-      n <- Gen.choose(0, 3)
-      numChildren = n + 2
-      childSize = size / numChildren
-      sizedFormulaModel = genFormulaModel(childSize)
-      fm1 <- sizedFormulaModel
-      fm2 <- sizedFormulaModel
-      fms <- Gen.listOfN(n, sizedFormulaModel)
-    } yield GroupModel(fm1, fm2, fms)
-  }
-
-  def genFormulaModel(size: Int): Gen[FormulaModel] = {
-    if (size < 2) genAtomModel
-    else Gen.oneOf(genAtomModel, genGroupModel(size))
-  }
-
-  implicit val arbFormulaModel: Arbitrary[FormulaModel] = {
-    Arbitrary(Gen.sized(genFormulaModel))
-  }
-
-  implicit val shrinkFormulaModel: Shrink[FormulaModel] = Shrink {
-    fm => fm match {
-      case AtomModel(name) => shrink(name).map(AtomModel.apply)
-      case GroupModel(fm1, fm2, fms) =>
-        shrink(fm1).map(GroupModel(_, fm2, fms)) ++
-          shrink(fm2).map(GroupModel(fm1, _, fms)) ++
-          shrink(fms).map(GroupModel(fm1, fm2, _))
+      chars <- actuallyNonEmptyListOf(genValidChar)
+    } yield {
+      // Call `buildWithoutValidation()` since `chars` is already valid
+      Atom.buildWithoutValidation(new String(chars.toArray))
     }
   }
 
-  def convertModel(fm: FormulaModel): Formula = {
-    fm match {
-      case AtomModel(name) => Atom(name)
-      case GroupModel(fm1, fm2, fms) =>
-        Group(convertModel(fm1) :: convertModel(fm2) :: fms.map(convertModel))
+  def genGroup: Gen[Group] = {
+    Gen.sized { size =>
+      for {
+        n <- Gen.choose(0, 3)
+        numChildren = n + 2
+        childSize = size / numChildren
+        sizedFormula = Gen.resize(childSize, genFormula)
+        firstFormula <- sizedFormula
+        secondFormula <- sizedFormula
+        otherFormulas <- Gen.listOfN(n, sizedFormula)
+      } yield {
+        // Call `buildWithoutValidation()` because children has >= 2 elements
+        val children = firstFormula :: secondFormula :: otherFormulas
+        Group.buildWithoutValidation(children)
+      }
     }
   }
 
-  def renderModel(fm: FormulaModel): String = {
-    fm match {
-      case AtomModel(name) => name
-      case GroupModel(fm1, fm2, fms) =>
-        "(" + renderModel(fm1) + " " + renderModel(fm2) +
-        renderRemaining(fms) + ")"
+  def genFormula: Gen[Formula] = {
+    Gen.sized { size =>
+      if (size < 2) genAtom
+      else Gen.oneOf(genAtom, Gen.resize(size, genGroup))
     }
   }
 
-  def renderRemaining(fms: List[FormulaModel]): String = {
-    fms match {
-      case Nil => ""
-      case head :: tail => " " + renderModel(head) + renderRemaining(tail)
+  implicit val arbFormula: Arbitrary[Formula] = {
+    Arbitrary(genFormula)
+  }
+
+  implicit val shrinkFormula: Shrink[Formula] = {
+    Shrink { formula =>
+      formula match {
+        case Atom(name) => shrink(name).flatMap(Atom.build)
+        case Group(children) => shrink(children).flatMap(Group.build)
+      }
+    }
+  }
+
+  def declarativeRender(formula: Formula): String = {
+    formula match {
+      case Atom(name) => name
+      case Group(children) =>
+        "(" + children.map(declarativeRender).mkString(" ") + ")"
     }
   }
 

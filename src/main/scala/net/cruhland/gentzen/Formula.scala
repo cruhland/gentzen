@@ -20,7 +20,10 @@ object Formula {
     formulaSeqParser(text.toList) match {
       case Right((Nil, Nil)) => Left("parse: no formulas")
       case Right((Nil, formula :: Nil)) => Right(formula)
-      case Right((Nil, formulas)) => Right(Group(formulas))
+      case Right((Nil, formulas)) =>
+        // `formulas` must contain at least two elements, therefore
+        // we can call `Group.buildWithoutValidation()`
+        Right(Group.buildWithoutValidation(formulas))
       case Right(_) => Left("parse: extra chars at end")
       case Left(message) => Left("parse: " + message)
     }
@@ -95,9 +98,15 @@ object Formula {
 
   private def atomParser: Parser[Atom] = {
     GeneralParser { (chars: List[Char]) =>
-      val (atomChars, remainingChars) = chars.span(isAtomChar)
-      if (atomChars.isEmpty) Left("atomParser: need at least one char")
-      else Right((remainingChars, Atom(atomChars.mkString)))
+      val (atomChars, remainingChars) = chars.span(!Atom.InvalidNameChars(_))
+      if (atomChars.isEmpty) {
+        Left("atomParser: need at least one char")
+      } else {
+        // Call `Atom.buildWithoutValidation()` because we
+        // know `atomChars` only contains valid name chars
+        val atom = Atom.buildWithoutValidation(new String(atomChars.toArray))
+        Right((remainingChars, atom))
+      }
     }
   }
 
@@ -112,7 +121,11 @@ object Formula {
       _ <- char(' ')
       otherFormulas <- formulaSeqParser
       _ <- char(')')
-    } yield Group(firstFormula :: otherFormulas)
+    } yield {
+      // `formulaSeqParser` guarantees that `otherFormulas` will contain
+      // at least one element, thus we can use `buildWithoutValidation()`
+      Group.buildWithoutValidation(firstFormula :: otherFormulas)
+    }
   }
 
   private def renderInto(f: Formula, target: Growable[Char]): Unit = {
@@ -131,5 +144,32 @@ object Formula {
 
 }
 
-case class Atom(name: String) extends Formula
-case class Group(children: List[Formula]) extends Formula
+case class Atom private(name: String) extends Formula
+
+object Atom {
+
+  val InvalidNameChars: Set[Char] = Set(' ', '(', ')')
+
+  def build(name: String): Option[Atom] = {
+    if (name.isEmpty || name.exists(InvalidNameChars)) None
+    else Some(buildWithoutValidation(name))
+  }
+
+  def buildWithoutValidation(name: String): Atom = Atom(name)
+
+}
+
+case class Group private(children: Seq[Formula]) extends Formula
+
+object Group {
+
+  def build(children: Traversable[Formula]): Option[Group] = {
+    if (children.size < 2) None
+    else Some(buildWithoutValidation(children))
+  }
+
+  def buildWithoutValidation(children: Traversable[Formula]): Group = {
+    Group(children.toSeq)
+  }
+
+}
