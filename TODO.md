@@ -1,5 +1,18 @@
-- Expand definition of whitespace, add tests for parsing extra whitespace
-- Forbid nonprintable characters in formulas
-- Switch to using Scala's parser combinators
-- Write tests for parsing failures
-- Code cleanup and comments
+- Formula figures: the formula "templates" in rule figures
+    - Determine if a formula matches a formula figure
+        - Formula variables and constants
+        - Assumptions
+        - Contains object variable (free or bound)
+        - Substitute object variable
+- Rule figures and derivations
+    - Formulas can be converted into no-assumption derivations
+    - Combine a set of derivations and a rule figure to produce
+      another derivation, or fail with a reason
+    - List unproven assumptions of a derivation (if any)
+- Use derivations as "rules" (theorems)
+- Formula parser
+    - Expand definition of whitespace, add tests for parsing extra whitespace
+    - Forbid nonprintable characters in formulas
+    - Switch to using Scala's parser combinators
+    - Write tests for parsing failures
+    - Code cleanup and comments
