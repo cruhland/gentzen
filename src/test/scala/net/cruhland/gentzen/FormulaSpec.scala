@@ -6,7 +6,7 @@ import org.scalacheck._
 import Arbitrary.arbitrary
 import Shrink.shrink
 
-class FormulaSpec extends PropSpec with PropertyChecks {
+class FormulaSpec extends GentzenSpec {
 
   import FormulaSpec._
 
@@ -122,58 +122,8 @@ class FormulaSpec extends PropSpec with PropertyChecks {
 
 object FormulaSpec {
 
-  val InvalidNameChars: Set[Char] = Set(' ', '(', ')')
-
   def isValidName(name: String): Boolean = {
     name.nonEmpty && !name.exists(InvalidNameChars)
-  }
-
-  def genAtom: Gen[Atom] = {
-    val genValidChar = arbitrary[Char].suchThat(!InvalidNameChars(_))
-    for {
-      chars <- actuallyNonEmptyListOf(genValidChar)
-    } yield {
-      // Call `buildWithoutValidation()` since `chars` is already valid
-      Atom.buildWithoutValidation(new String(chars.toArray))
-    }
-  }
-
-  def genGroup: Gen[Group] = {
-    Gen.sized { size =>
-      for {
-        n <- Gen.choose(0, 3)
-        numChildren = n + 2
-        childSize = size / numChildren
-        sizedFormula = Gen.resize(childSize, genFormula)
-        firstFormula <- sizedFormula
-        secondFormula <- sizedFormula
-        otherFormulas <- Gen.listOfN(n, sizedFormula)
-      } yield {
-        // Call `buildWithoutValidation()` because children has >= 2 elements
-        val children = firstFormula :: secondFormula :: otherFormulas
-        Group.buildWithoutValidation(children)
-      }
-    }
-  }
-
-  def genFormula: Gen[Formula] = {
-    Gen.sized { size =>
-      if (size < 2) genAtom
-      else Gen.oneOf(genAtom, Gen.resize(size, genGroup))
-    }
-  }
-
-  implicit val arbFormula: Arbitrary[Formula] = {
-    Arbitrary(genFormula)
-  }
-
-  implicit val shrinkFormula: Shrink[Formula] = {
-    Shrink { formula =>
-      formula match {
-        case Atom(name) => shrink(name).flatMap(Atom.build)
-        case Group(children) => shrink(children).flatMap(Group.build)
-      }
-    }
   }
 
   def declarativeRender(formula: Formula): String = {
