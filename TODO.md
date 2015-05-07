@@ -1,10 +1,9 @@
-- Proof figure
-    - Formulas can be converted into no-assumption proof figures
-    - Proof figures can be constructed from antecedent proof figures and a
-      concluding formula
-    - Proof figures are not valid derivations; each step must be validated by
-      a rule figure
 - Formula figures: the formula "templates" in rule figures
+    - Clean up Formula[A] type
+        - Eliminate parameter A by making Formula[String] a special case of
+          Formula[Schema]
+        - Sane constructors for Atoms and Groups
+        - Rendering (maybe parsing?) for general Formulas
     - Determine if a proof figure matches a formula figure
         - Formula variables and constants
         - Assumptions (discharged or not)

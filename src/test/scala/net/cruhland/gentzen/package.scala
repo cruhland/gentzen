@@ -37,7 +37,7 @@ package object gentzen {
 
   val InvalidNameChars: Set[Char] = Set(' ', '(', ')')
 
-  def genAtom: Gen[Atom] = {
+  def genAtom: Gen[Atom[String]] = {
     val genValidChar = arbitrary[Char].suchThat(!InvalidNameChars(_))
     for {
       chars <- actuallyNonEmptyListOf(genValidChar)
@@ -47,7 +47,7 @@ package object gentzen {
     }
   }
 
-  def genGroup: Gen[Group] = {
+  def genGroup: Gen[Group[String]] = {
     Gen.sized { size =>
       for {
         n <- Gen.choose(0, math.min(3, size))
@@ -62,22 +62,22 @@ package object gentzen {
     }
   }
 
-  def genFormula: Gen[Formula] = {
+  def genFormula: Gen[Formula[String]] = {
     Gen.sized { size =>
       if (size < 2) genAtom
       else Gen.oneOf(genAtom, Gen.resize(size, genGroup))
     }
   }
 
-  implicit val arbFormula: Arbitrary[Formula] = {
+  implicit val arbFormula: Arbitrary[Formula[String]] = {
     Arbitrary(genFormula)
   }
 
-  implicit val shrinkFormula: Shrink[Formula] = {
+  implicit val shrinkFormula: Shrink[Formula[String]] = {
     Shrink { formula =>
       formula match {
         case Atom(name) => shrink(name).flatMap(Atom.build)
-        case Group(children) => shrink(children).flatMap(Group.build)
+        case Group(children) => shrink(children).flatMap(Group.build[String])
       }
     }
   }

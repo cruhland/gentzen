@@ -63,7 +63,7 @@ class FormulaSpec extends GentzenSpec {
   }
 
   property("[Group.build()] less than two children") {
-    forAll { (formulaOpt: Option[Formula]) =>
+    forAll { (formulaOpt: Option[Formula[String]]) =>
       // Don't need `whenever` here; shrinks will preserve the condition
       assertResult(None) {
         Group.build(formulaOpt)
@@ -72,7 +72,7 @@ class FormulaSpec extends GentzenSpec {
   }
 
   property("[Group.build()] two or more children") {
-    forAll { (formulas: List[Formula]) =>
+    forAll { (formulas: List[Formula[String]]) =>
       whenever(formulas.size >= 2) {
         assertResult(Some(formulas)) {
           Group.build(formulas).map(_.children)
@@ -82,7 +82,7 @@ class FormulaSpec extends GentzenSpec {
   }
 
   property("[Group.buildWithoutValidation()] less than two children") {
-    forAll { (formulaOpt: Option[Formula]) =>
+    forAll { (formulaOpt: Option[Formula[String]]) =>
       // Don't need `whenever` here; shrinks will preserve the condition
       assertResult(formulaOpt.toSeq) {
         Group.buildWithoutValidation(formulaOpt).children
@@ -91,7 +91,7 @@ class FormulaSpec extends GentzenSpec {
   }
 
   property("[Group.buildWithoutValidation()] two or more children") {
-    forAll { (formulas: List[Formula]) =>
+    forAll { (formulas: List[Formula[String]]) =>
       whenever(formulas.size >= 2) {
         assertResult(formulas) {
           Group.buildWithoutValidation(formulas).children
@@ -101,7 +101,7 @@ class FormulaSpec extends GentzenSpec {
   }
 
   property("[Formula.render()] definition") {
-    forAll { (formula: Formula) =>
+    forAll { (formula: Formula[String]) =>
       // Don't need `whenever` here; gens and shrinks for `Formula` are valid
       assertResult(declarativeRender(formula)) {
         formula.render
@@ -110,7 +110,7 @@ class FormulaSpec extends GentzenSpec {
   }
 
   property("[Formula.parse()] inverse of rendering") {
-    forAll { (formula: Formula) =>
+    forAll { (formula: Formula[String]) =>
       // Don't need `whenever` here; gens and shrinks for `Formula` are valid
       assertResult(Right(formula)) {
         Formula.parse(formula.render)
@@ -126,7 +126,7 @@ object FormulaSpec {
     name.nonEmpty && !name.exists(InvalidNameChars)
   }
 
-  def declarativeRender(formula: Formula): String = {
+  def declarativeRender(formula: Formula[String]): String = {
     formula match {
       case Atom(name) => name
       case Group(children) =>
