@@ -2,13 +2,13 @@ package net.cruhland.gentzen
 
 import collection.generic.Growable
 
-sealed trait Formula[A] {
+sealed trait Formula {
 
   import Formula._
 
-  final def render(implicit ev: Formula[A] => Formula[String]): String = {
+  final def render: String = {
     val sb = new StringBuilder
-    renderInto(ev(this), sb)
+    renderInto(this, sb)
     sb.toString
   }
 
@@ -16,7 +16,7 @@ sealed trait Formula[A] {
 
 object Formula {
 
-  def parse(text: String): Either[String, Formula[String]] = {
+  def parse(text: String): Either[String, Formula] = {
     formulaSeqParser(text.toList) match {
       case Right((Nil, Nil)) => Left("parse: no formulas")
       case Right((Nil, formula :: Nil)) => Right(formula)
@@ -59,14 +59,14 @@ object Formula {
     }
   }
 
-  private def formulaSeqParser: Parser[List[Formula[String]]] = {
+  private def formulaSeqParser: Parser[List[Formula]] = {
     for {
       firstFormula <- formulaParser
       followingFormulas <- zeroOrMore(followingFormulaParser)
     } yield firstFormula :: followingFormulas
   }
 
-  private def followingFormulaParser: Parser[Formula[String]] = {
+  private def followingFormulaParser: Parser[Formula] = {
     for {
       _ <- char(' ')
       formula <- formulaParser
@@ -87,7 +87,7 @@ object Formula {
     }
   }
 
-  private def formulaParser: Parser[Formula[String]] = {
+  private def formulaParser: Parser[Formula] = {
     GeneralParser { (chars: List[Char]) =>
       groupParser(chars) match {
         case Left(_) => atomParser(chars)
@@ -96,15 +96,16 @@ object Formula {
     }
   }
 
-  private def atomParser: Parser[Atom[String]] = {
+  private def atomParser: Parser[Atom] = {
     GeneralParser { (chars: List[Char]) =>
-      val (atomChars, remainingChars) = chars.span(!Atom.InvalidNameChars(_))
+      val (atomChars, remainingChars) = chars.span(!Constant.InvalidChars(_))
       if (atomChars.isEmpty) {
         Left("atomParser: need at least one char")
       } else {
-        // Call `Atom.buildWithoutValidation()` because we
+        val value = new String(atomChars.toArray)
+        // Call `buildWithoutValidation()` because we
         // know `atomChars` only contains valid name chars
-        val atom = Atom.buildWithoutValidation(new String(atomChars.toArray))
+        val atom = Atom(Constant.buildWithoutValidation(value))
         Right((remainingChars, atom))
       }
     }
@@ -114,7 +115,7 @@ object Formula {
     !(c == ' ' || c == '(' || c == ')')
   }
 
-  private def groupParser: Parser[Group[String]] = {
+  private def groupParser: Parser[Group] = {
     for {
       _ <- char('(')
       firstFormula <- formulaParser
@@ -128,9 +129,12 @@ object Formula {
     }
   }
 
-  private def renderInto(f: Formula[String], target: Growable[Char]): Unit = {
+  private def renderInto(f: Formula, target: Growable[Char]): Unit = {
     f match {
-      case Atom(name) => target ++= name
+      case Atom(Constant(value)) => target ++= value
+      case Atom(_) =>
+        // The tests don't (yet) cover this case -- we can do anything
+        target ++= "?unknown-atom?"
       case Group(children) =>
         target += '('
         renderInto(children.head, target)
@@ -144,33 +148,17 @@ object Formula {
 
 }
 
-case class Atom[A] private(name: A) extends Formula[A]
-
-object Atom {
-
-  val InvalidNameChars: Set[Char] = Set(' ', '(', ')')
-
-  def build(name: String): Option[Atom[String]] = {
-    if (name.isEmpty || name.exists(InvalidNameChars)) None
-    else Some(buildWithoutValidation(name))
-  }
-
-  def buildWithoutValidation(name: String): Atom[String] = Atom(name)
-
-  def buildSchema(schema: Schema): Atom[Schema] = Atom(schema)
-
-}
-
-case class Group[A] private(children: Seq[Formula[A]]) extends Formula[A]
+case class Atom(value: AtomValue) extends Formula
+case class Group private(children: Seq[Formula]) extends Formula
 
 object Group {
 
-  def build[A](children: Traversable[Formula[A]]): Option[Group[A]] = {
+  def build(children: Traversable[Formula]): Option[Group] = {
     if (children.size < 2) None
     else Some(buildWithoutValidation(children))
   }
 
-  def buildWithoutValidation[A](children: Traversable[Formula[A]]): Group[A] = {
+  def buildWithoutValidation(children: Traversable[Formula]): Group = {
     Group(children.toSeq)
   }
 

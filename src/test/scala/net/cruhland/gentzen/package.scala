@@ -35,19 +35,20 @@ package object gentzen {
     }
   }
 
-  val InvalidNameChars: Set[Char] = Set(' ', '(', ')')
+  val InvalidAtomChars: Set[Char] = Set(' ', '(', ')')
 
-  def genAtom: Gen[Atom[String]] = {
-    val genValidChar = arbitrary[Char].suchThat(!InvalidNameChars(_))
+  def genPlainAtom: Gen[Atom] = {
+    val genValidChar = arbitrary[Char].suchThat(!InvalidAtomChars(_))
     for {
       chars <- actuallyNonEmptyListOf(genValidChar)
     } yield {
       // Call `buildWithoutValidation()` since `chars` is already valid
-      Atom.buildWithoutValidation(new String(chars.toArray))
+      val constant = Constant.buildWithoutValidation(new String(chars.toArray))
+      Atom(constant)
     }
   }
 
-  def genGroup: Gen[Group[String]] = {
+  def genGroup: Gen[Group] = {
     Gen.sized { size =>
       for {
         n <- Gen.choose(0, math.min(3, size))
@@ -62,22 +63,22 @@ package object gentzen {
     }
   }
 
-  def genFormula: Gen[Formula[String]] = {
+  def genFormula: Gen[Formula] = {
     Gen.sized { size =>
-      if (size < 2) genAtom
-      else Gen.oneOf(genAtom, Gen.resize(size, genGroup))
+      if (size < 2) genPlainAtom
+      else Gen.oneOf(genPlainAtom, Gen.resize(size, genGroup))
     }
   }
 
-  implicit val arbFormula: Arbitrary[Formula[String]] = {
+  implicit val arbFormula: Arbitrary[Formula] = {
     Arbitrary(genFormula)
   }
 
-  implicit val shrinkFormula: Shrink[Formula[String]] = {
+  implicit val shrinkFormula: Shrink[Formula] = {
     Shrink { formula =>
       formula match {
-        case Atom(name) => shrink(name).flatMap(Atom.build)
-        case Group(children) => shrink(children).flatMap(Group.build[String])
+        case Atom(value) => shrink(value).map(Atom.apply)
+        case Group(children) => shrink(children).flatMap(Group.build)
       }
     }
   }

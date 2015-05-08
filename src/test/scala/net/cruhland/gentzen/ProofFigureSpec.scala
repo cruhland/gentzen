@@ -15,7 +15,7 @@ class ProofFigureSpec extends GentzenSpec {
     // This is trivial, but ensures that proof figures have the required
     // components
     forAll {
-      (upperFigures: List[ProofFigure], lowerFormula: Formula[String]) =>
+      (upperFigures: List[ProofFigure], lowerFormula: Formula) =>
         // We don't need `whenever` because gen and shrinks are always correct
         val proofFigure = ProofFigure(upperFigures, lowerFormula)
         assertResult(upperFigures) {
@@ -38,7 +38,7 @@ object ProofFigureSpec {
         upperSize = if (numUpper > 0) size / numUpper else 0
         sizedProofFigure = Gen.resize(upperSize, genProofFigure)
         upperFigures <- Gen.listOfN(numUpper, sizedProofFigure)
-        lowerFormula <- arbitrary[Formula[String]]
+        lowerFormula <- arbitrary[Formula]
       } yield ProofFigure(upperFigures, lowerFormula)
     }
   }

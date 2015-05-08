@@ -2,24 +2,36 @@ package net.cruhland.gentzen
 
 object Derivation {
 
-  def matches(
-    template: Formula[Schema], formula: Formula[String]
-  ): Option[MatchError] = {
+  def matches(template: Formula, formula: Formula): Option[MatchError] = {
     template match {
-      case Atom(Constant("0")) =>
-        formula match {
-          case Atom("0") => None
-          case _ => Some(ConstantMismatch("0", formula))
-        }
+      case Atom(atom) => atom match {
+        case Constant(_) =>
+          if (template == formula) None
+          else Some(ConstantMismatch("0", formula))
+        case _ => None
+      }
       case _ => None
     }
   }
 
 }
 
-sealed trait Schema
-case class FormulaVariable(name: String) extends Schema
-case class Constant(name: String) extends Schema
+sealed trait AtomValue
+case class FormulaVariable(name: String) extends AtomValue
+case class Constant private(value: String) extends AtomValue
+
+object Constant {
+
+  val InvalidChars: Set[Char] = Set(' ', '(', ')')
+
+  def build(value: String): Option[Constant] = {
+    if (value.isEmpty || value.exists(InvalidChars)) None
+    else Some(buildWithoutValidation(value))
+  }
+
+  def buildWithoutValidation(value: String): Constant = Constant(value)
+
+}
 
 sealed trait MatchError
-case class ConstantMismatch(name: String, formula: Formula[String]) extends MatchError
+case class ConstantMismatch(value: String, formula: Formula) extends MatchError

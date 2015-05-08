@@ -10,60 +10,60 @@ class FormulaSpec extends GentzenSpec {
 
   import FormulaSpec._
 
-  property("[Atom.build()] empty name") {
+  property("[Constant.build()] empty value") {
     assertResult(None) {
-      Atom.build("")
+      Constant.build("")
     }
   }
 
-  property("[Atom.build()] names with invalid chars") {
-    forAll(genStringContainingAnyOf(InvalidNameChars)) { (name: String) =>
-      whenever(!isValidName(name)) {
+  property("[Constant.build()] values with invalid chars") {
+    forAll(genStringContainingAnyOf(InvalidAtomChars)) { (value: String) =>
+      whenever(!isValidConstant(value)) {
         assertResult(None) {
-          Atom.build(name)
+          Constant.build(value)
         }
       }
     }
   }
 
-  property("[Atom.build()] names without invalid chars") {
-    forAll { (name: String) =>
-      whenever(isValidName(name)) {
-        assertResult(Some(name)) {
-          Atom.build(name).map(_.name)
+  property("[Constant.build()] values without invalid chars") {
+    forAll { (value: String) =>
+      whenever(isValidConstant(value)) {
+        assertResult(Some(value)) {
+          Constant.build(value).map(_.value)
         }
       }
     }
   }
 
-  property("[Atom.buildWithoutValidation()] empty name") {
+  property("[Constant.buildWithoutValidation()] empty value") {
     assertResult("") {
-      Atom.buildWithoutValidation("").name
+      Constant.buildWithoutValidation("").value
     }
   }
 
-  property("[Atom.buildWithoutValidation()] names with invalid chars") {
-    forAll(genStringContainingAnyOf(InvalidNameChars)) { (name: String) =>
-      whenever(!isValidName(name)) {
-        assertResult(name) {
-          Atom.buildWithoutValidation(name).name
+  property("[Constant.buildWithoutValidation()] values with invalid chars") {
+    forAll(genStringContainingAnyOf(InvalidAtomChars)) { (value: String) =>
+      whenever(!isValidConstant(value)) {
+        assertResult(value) {
+          Constant.buildWithoutValidation(value).value
         }
       }
     }
   }
 
-  property("[Atom.buildWithoutValidation()] names without invalid chars") {
-    forAll { (name: String) =>
-      whenever(isValidName(name)) {
-        assertResult(name) {
-          Atom.buildWithoutValidation(name).name
+  property("[Constant.buildWithoutValidation()] values without invalid chars") {
+    forAll { (value: String) =>
+      whenever(isValidConstant(value)) {
+        assertResult(value) {
+          Constant.buildWithoutValidation(value).value
         }
       }
     }
   }
 
   property("[Group.build()] less than two children") {
-    forAll { (formulaOpt: Option[Formula[String]]) =>
+    forAll { (formulaOpt: Option[Formula]) =>
       // Don't need `whenever` here; shrinks will preserve the condition
       assertResult(None) {
         Group.build(formulaOpt)
@@ -72,7 +72,7 @@ class FormulaSpec extends GentzenSpec {
   }
 
   property("[Group.build()] two or more children") {
-    forAll { (formulas: List[Formula[String]]) =>
+    forAll { (formulas: List[Formula]) =>
       whenever(formulas.size >= 2) {
         assertResult(Some(formulas)) {
           Group.build(formulas).map(_.children)
@@ -82,7 +82,7 @@ class FormulaSpec extends GentzenSpec {
   }
 
   property("[Group.buildWithoutValidation()] less than two children") {
-    forAll { (formulaOpt: Option[Formula[String]]) =>
+    forAll { (formulaOpt: Option[Formula]) =>
       // Don't need `whenever` here; shrinks will preserve the condition
       assertResult(formulaOpt.toSeq) {
         Group.buildWithoutValidation(formulaOpt).children
@@ -91,7 +91,7 @@ class FormulaSpec extends GentzenSpec {
   }
 
   property("[Group.buildWithoutValidation()] two or more children") {
-    forAll { (formulas: List[Formula[String]]) =>
+    forAll { (formulas: List[Formula]) =>
       whenever(formulas.size >= 2) {
         assertResult(formulas) {
           Group.buildWithoutValidation(formulas).children
@@ -101,7 +101,7 @@ class FormulaSpec extends GentzenSpec {
   }
 
   property("[Formula.render()] definition") {
-    forAll { (formula: Formula[String]) =>
+    forAll { (formula: Formula) =>
       // Don't need `whenever` here; gens and shrinks for `Formula` are valid
       assertResult(declarativeRender(formula)) {
         formula.render
@@ -110,7 +110,7 @@ class FormulaSpec extends GentzenSpec {
   }
 
   property("[Formula.parse()] inverse of rendering") {
-    forAll { (formula: Formula[String]) =>
+    forAll { (formula: Formula) =>
       // Don't need `whenever` here; gens and shrinks for `Formula` are valid
       assertResult(Right(formula)) {
         Formula.parse(formula.render)
@@ -122,13 +122,16 @@ class FormulaSpec extends GentzenSpec {
 
 object FormulaSpec {
 
-  def isValidName(name: String): Boolean = {
-    name.nonEmpty && !name.exists(InvalidNameChars)
+  def isValidConstant(value: String): Boolean = {
+    value.nonEmpty && !value.exists(InvalidAtomChars)
   }
 
-  def declarativeRender(formula: Formula[String]): String = {
+  def declarativeRender(formula: Formula): String = {
     formula match {
-      case Atom(name) => name
+      case Atom(Constant(value)) => value
+      case Atom(_) =>
+        val message = "rendering non-constants is undefined"
+        throw new IllegalArgumentException(message)
       case Group(children) =>
         "(" + children.map(declarativeRender).mkString(" ") + ")"
     }

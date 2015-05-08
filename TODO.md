@@ -1,9 +1,4 @@
 - Formula figures: the formula "templates" in rule figures
-    - Clean up Formula[A] type
-        - Eliminate parameter A by making Formula[String] a special case of
-          Formula[Schema]
-        - Sane constructors for Atoms and Groups
-        - Rendering (maybe parsing?) for general Formulas
     - Determine if a proof figure matches a formula figure
         - Formula variables and constants
         - Assumptions (discharged or not)
@@ -22,3 +17,4 @@
     - Switch to using Scala's parser combinators
     - Write tests for parsing failures
     - Code cleanup and comments
+- Rendering (maybe parsing?) for general Formulas
