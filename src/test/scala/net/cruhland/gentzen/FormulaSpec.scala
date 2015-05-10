@@ -6,6 +6,8 @@ import org.scalacheck._
 import Arbitrary.arbitrary
 import Shrink.shrink
 
+import FormulaGen._
+
 class FormulaSpec extends GentzenSpec {
 
   import FormulaSpec._

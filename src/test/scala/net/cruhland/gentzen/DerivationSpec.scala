@@ -5,6 +5,8 @@ import prop._
 
 import org.scalacheck._
 
+import FormulaGen._
+
 class DerivationSpec extends GentzenSpec {
 
   property("a single formula variable matches any simple formula") {

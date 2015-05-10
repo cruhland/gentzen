@@ -7,6 +7,8 @@ import org.scalacheck._
 import Arbitrary.arbitrary
 import Shrink.shrink
 
+import FormulaGen._
+
 class ProofFigureSpec extends GentzenSpec {
 
   import ProofFigureSpec._
