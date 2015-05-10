@@ -1,10 +1,5 @@
 package net.cruhland.gentzen
 
-import org.scalatest._
-import prop._
-
-import org.scalacheck._
-
 import FormulaGen._
 
 class DerivationSpec extends GentzenSpec {

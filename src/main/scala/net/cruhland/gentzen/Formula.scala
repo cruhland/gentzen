@@ -111,10 +111,6 @@ object Formula {
     }
   }
 
-  private def isAtomChar(c: Char): Boolean = {
-    !(c == ' ' || c == '(' || c == ')')
-  }
-
   private def groupParser: Parser[Group] = {
     for {
       _ <- char('(')
@@ -131,10 +127,10 @@ object Formula {
 
   private def renderInto(f: Formula, target: Growable[Char]): Unit = {
     f match {
-      case Atom(Constant(value)) => target ++= value
+      case Atom(Constant(value)) => val _ = target ++= value
       case Atom(_) =>
         // The tests don't (yet) cover this case -- we can do anything
-        target ++= "?unknown-atom?"
+        val _ = target ++= "?unknown-atom?"
       case Group(children) =>
         target += '('
         renderInto(children.head, target)
@@ -142,7 +138,7 @@ object Formula {
           target += ' '
           renderInto(child, target)
         }
-        target += ')'
+        val _ = target += ')'
     }
   }
 

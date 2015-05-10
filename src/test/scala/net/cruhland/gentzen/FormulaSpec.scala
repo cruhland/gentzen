@@ -1,7 +1,5 @@
 package net.cruhland.gentzen
 
-import org.scalatest._
-import prop._
 import org.scalacheck._
 import Arbitrary.arbitrary
 import Shrink.shrink

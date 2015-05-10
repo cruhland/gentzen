@@ -1,7 +1,5 @@
 package net.cruhland
 
-import org.scalatest._
-import prop._
 import org.scalacheck._
 import Arbitrary.arbitrary
 import Shrink.shrink
@@ -34,7 +32,5 @@ package object gentzen {
       case _ => second
     }
   }
-
-  abstract class GentzenSpec extends PropSpec with PropertyChecks
 
 }
