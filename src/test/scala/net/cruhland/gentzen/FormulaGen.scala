@@ -22,11 +22,9 @@ object FormulaGen {
   def genGroup: Gen[Group] = {
     Gen.sized { size =>
       for {
-        n <- Gen.choose(0, math.min(3, size))
-        numChildren = n + 2
-        childSize = size / numChildren
-        sizedFormula = Gen.resize(childSize, genFormula)
-        children <- Gen.listOfN(numChildren, sizedFormula)
+        childSizes <- GenExtras.composition(size - 1).retryUntil(_.size >= 2)
+        childrenGens = childSizes.map(Gen.resize(_, genFormula))
+        children <- Gen.sequence[Seq[Formula], Formula](childrenGens)
       } yield {
         // Call `buildWithoutValidation()` because children has >= 2 elements
         Group.buildWithoutValidation(children)
@@ -35,10 +33,7 @@ object FormulaGen {
   }
 
   def genFormula: Gen[Formula] = {
-    Gen.sized { size =>
-      if (size < 2) genPlainAtom
-      else Gen.oneOf(genPlainAtom, Gen.resize(size, genGroup))
-    }
+    Gen.sized(size => if (size < 3) genPlainAtom else genGroup)
   }
 
   implicit val arbFormula: Arbitrary[Formula] = {
