@@ -11,7 +11,7 @@ object FormulaGen {
   def genPlainAtom: Gen[Atom] = {
     val genValidChar = arbitrary[Char].suchThat(!InvalidAtomChars(_))
     for {
-      chars <- actuallyNonEmptyListOf(genValidChar)
+      chars <- GenExtras.actuallyNonEmptyListOf(genValidChar)
     } yield {
       // Call `buildWithoutValidation()` since `chars` is already valid
       val constant = Constant.buildWithoutValidation(new String(chars.toArray))

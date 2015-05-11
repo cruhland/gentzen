@@ -5,6 +5,7 @@ import Arbitrary.arbitrary
 import Shrink.shrink
 
 import FormulaGen._
+import GenExtras._
 
 class FormulaSpec extends GentzenSpec {
 
