@@ -42,4 +42,36 @@ object GenExtras {
     }
   }
 
+  def partition(n: Int): Gen[List[Int]] = {
+    partition(n, n)
+  }
+
+  // TODO: Can this be made tail recursive?
+  def partition(n: Int, k: Int): Gen[List[Int]] = {
+    val possibleElements = 1 to k
+    val partitionsWithMaxElement =
+      possibleElements
+        .view
+        .map(m => pmax(n, m) -> m)
+        .filter { case (count, _) => count > 0 }
+        .map { case (count, element) => count -> Gen.const(element) }
+
+    if (partitionsWithMaxElement.isEmpty) Gen.const(Nil)
+    else {
+      for {
+        element <- Gen.frequency(partitionsWithMaxElement: _*)
+        subPartition <- partition(n - element, element)
+      } yield element :: subPartition
+    }
+  }
+
+  // TODO: Memoize
+  def pmax(n: Int, k: Int): Int = {
+    (n, k) match {
+      case (0, 0) => 1
+      case _ if n <= 0 || k <= 0 => 0
+      case _ => pmax(n - k, k) + pmax(n - 1, k - 1)
+    }
+  }
+
 }

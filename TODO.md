@@ -1,3 +1,4 @@
+- Ensure partition generator is efficient
 - Formula figures: the formula "templates" in rule figures
     - Determine if a proof figure matches a formula figure
         - Formula variables and constants
@@ -11,6 +12,7 @@
       valid derivation, or fail with a reason
     - List unproven assumptions of a derivation (if any)
 - Use derivations as "rules" (theorems)
+- Clean up all code and add comments
 - Formula parser
     - Expand definition of whitespace, add tests for parsing extra whitespace
     - Forbid nonprintable characters in formulas
