@@ -31,3 +31,35 @@ class DerivationSpec extends GentzenSpec {
   }
 
 }
+
+object DerivationSpec {
+
+  // TODO: Clean up and combine with other functions to make template gen
+  def replaceAtoms(f: Formula, atoms: List[AtomValue]): Formula = {
+    def helper(
+      f: Formula, atoms: List[AtomValue]
+    ): (Formula, List[AtomValue]) = {
+      atoms match {
+        case a :: as =>
+          f match {
+            case Atom(_) => (Atom(a), as)
+            case Group(children) =>
+              val initialState = (List.empty[Formula], atoms)
+              val (revChildren, leftoverAtoms) =
+                children.foldLeft(initialState) { (state, child) =>
+                  val (updatedChildren, remainingAtoms) = state
+                  val (updatedChild, updatedAtoms) =
+                    helper(child, remainingAtoms)
+                  (updatedChild :: updatedChildren, updatedAtoms)
+                }
+              (Group.buildWithoutValidation(revChildren.reverse), leftoverAtoms)
+          }
+        case _ => (f, atoms)
+      }
+    }
+
+    val (newFormula, _) = helper(f, atoms)
+    newFormula
+  }
+
+}
