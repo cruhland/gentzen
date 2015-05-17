@@ -1,5 +1,7 @@
 package net.cruhland.gentzen
 
+import scala.util.Random
+
 import org.scalacheck._
 import Arbitrary.arbitrary
 
@@ -71,6 +73,21 @@ object GenExtras {
       case (0, 0) => 1
       case _ if n <= 0 || k <= 0 => 0
       case _ => pmax(n - k, k) + pmax(n - 1, k - 1)
+    }
+  }
+
+  // TODO: Move this into DerivationSpec once it's complete
+  def tempGenAtoms(p: List[Int]): Gen[List[AtomValue]] = {
+    val genAtomValueConstructor =
+      Gen.oneOf(FormulaVariable.apply _, Constant.buildWithoutValidation _)
+    val listOfGens = p.zipWithIndex.map {
+      case (n, i) => genAtomValueConstructor.map(f => n -> f(i.toString))
+    }
+
+    for {
+      list <- Gen.sequence[List[(Int, AtomValue)], (Int, AtomValue)](listOfGens)
+    } yield {
+      Random.shuffle(list.flatMap { case (n, av) => List.fill(n)(av) })
     }
   }
 
