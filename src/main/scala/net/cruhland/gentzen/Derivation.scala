@@ -2,16 +2,46 @@ package net.cruhland.gentzen
 
 object Derivation {
 
-  def matches(template: Formula, formula: Formula): Option[MatchError] = {
-    template match {
-      case Atom(atom) => atom match {
-        case Constant(_) =>
-          if (template == formula) None
-          else Some(ConstantMismatch("0", formula))
-        case _ => None
-      }
+  def matches(template: Formula, formula: Formula): Boolean = {
+    matchHelper(template, formula).isDefined
+  }
+
+  private[this] def matchHelper(
+    template: Formula, formula: Formula
+  ): Option[Map[String, Formula]] = {
+    (template, formula) match {
+      case (Atom(Constant(tv)), Atom(Constant(fv))) if tv == fv =>
+        Some(Map.empty)
+      case (Atom(FormulaVariable(variable)), _) =>
+        Some(Map(variable -> formula))
+      case (Group(tcn), Group(fcn)) if tcn.size == fcn.size =>
+        tcn.zip(fcn).map((matchHelper _).tupled).reduce { (left, right) =>
+          for {
+            leftVars <- left
+            rightVars <- right
+            mergedVars <- merge(leftVars, rightVars)
+          } yield mergedVars
+        }
       case _ => None
     }
+  }
+
+  private[this] def merge[A, B](
+    left: Map[A, B], right: Map[A, B]
+  ): Option[Map[A, B]] = {
+    val allKeys = left.keySet ++ right.keySet
+
+    val mergedEntries = allKeys.toSeq.flatMap { key =>
+      (left.get(key), right.get(key)) match {
+        case (Some(leftVal), Some(rightVal)) if leftVal == rightVal =>
+          Some(key -> leftVal)
+        case (Some(leftVal), None) => Some(key -> leftVal)
+        case (None, Some(rightVal)) => Some(key -> rightVal)
+        case _ => None
+      }
+    }
+
+    if (mergedEntries.size == allKeys.size) Some(mergedEntries.toMap) else None
   }
 
 }

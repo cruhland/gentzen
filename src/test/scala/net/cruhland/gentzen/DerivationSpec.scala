@@ -1,40 +1,116 @@
 package net.cruhland.gentzen
 
-import FormulaGen._
-
 import org.scalacheck._
+import org.scalatest._
 
-class DerivationSpec extends GentzenSpec {
+class DerivationSpec extends FreeSpec {
 
-  property("a single formula variable matches any simple formula") {
-    forAll { (formula: Formula) =>
-      assertResult(None) {
-        Derivation.matches(Atom(FormulaVariable("A")), formula)
-      }
-    }
-  }
+  import DerivationSpec._
 
-  property("a constant matches itself") {
-    assertResult(None) {
-      val constant = Atom(Constant.buildWithoutValidation("0"))
-      Derivation.matches(constant, constant)
-    }
-  }
+  "a template" - {
 
-  property("a constant matches nothing other than itself") {
-    forAll { (formula: Formula) =>
-      val constant = Atom(Constant.buildWithoutValidation("0"))
-      whenever(formula != constant) {
-        assertResult(Some(ConstantMismatch("0", formula))) {
-          Derivation.matches(constant, formula)
+    "of a single constant atom" - {
+
+      "only matches a formula with an identical constant" in {
+        assertResult(true)(Derivation.matches(constant("0"), constant("0")))
+        assertResult(false)(Derivation.matches(constant("1"), constant("2")))
+        assertResult(false) {
+          Derivation.matches(constant("2"), group(constant("3"), constant("4")))
         }
       }
+
     }
+
+    "of a single variable atom" - {
+
+      "matches any simple formula" in {
+        assertResult(true)(Derivation.matches(variable("A"), constant("0")))
+        assertResult(true) {
+          Derivation.matches(variable("B"), group(constant("1"), constant("2")))
+        }
+      }
+
+    }
+
+    "of a group" - {
+
+      "does not match a non-group" in {
+        val template = group(constant("0"), variable("A"))
+        assertResult(false)(Derivation.matches(template, constant("1")))
+      }
+
+      "does not match a group with a different number of children" in {
+        val template = group(constant("1"), variable("B"), constant("2"))
+        val smallerGroup = group(constant("1"), constant("2"))
+        val largerGroup =
+          group(constant("1"), constant("2"), constant("3"), constant("4"))
+        assertResult(false)(Derivation.matches(template, smallerGroup))
+        assertResult(false)(Derivation.matches(template, largerGroup))
+      }
+
+      "does not match a group with a non-matching child" in {
+        val constTemplate = group(constant("1"), constant("0"))
+        val leftDiff = group(constant("2"), constant("0"))
+        val rightDiff = group(constant("1"), constant("3"))
+        val bothDiff = group(constant("4"), constant("5"))
+        assertResult(false)(Derivation.matches(constTemplate, leftDiff))
+        assertResult(false)(Derivation.matches(constTemplate, rightDiff))
+        assertResult(false)(Derivation.matches(constTemplate, bothDiff))
+
+        val groupTemplate = group(constTemplate, constant("2"))
+        val nonGroupDiff = group(constant("3"), constant("2"))
+        val bigGroup = group(constant("1"), constant("0"), constant("3"))
+        val numChildDiff = group(bigGroup, constant("2"))
+        val mismatchGroup = group(constant("3"), constant("0"))
+        val recursiveDiff = group(mismatchGroup, constant("2"))
+        assertResult(false)(Derivation.matches(groupTemplate, nonGroupDiff))
+        assertResult(false)(Derivation.matches(groupTemplate, numChildDiff))
+        assertResult(false)(Derivation.matches(groupTemplate, recursiveDiff))
+      }
+
+      "matches a group with corresponding matching children" in {
+        val constTemplate = group(constant("1"), constant("0"))
+        assertResult(true)(Derivation.matches(constTemplate, constTemplate))
+
+        val varTemplate = group(variable("A"), variable("B"))
+        assertResult(true)(Derivation.matches(varTemplate, constTemplate))
+
+        val nestedTemplate = group(constTemplate, varTemplate)
+        val nestedFormula = group(constTemplate, constTemplate)
+        assertResult(true)(Derivation.matches(nestedTemplate, nestedFormula))
+      }
+
+    }
+
+    "with more than one occurrence of the same variable" - {
+
+      "only matches if all occurrences identify the same subformula" in {
+        val template = group(variable("A"), variable("A"))
+        val mismatchedGroup = group(constant("0"), constant("1"))
+        val matchedGroup = group(constant("0"), constant("0"))
+        assertResult(false)(Derivation.matches(template, mismatchedGroup))
+        assertResult(true)(Derivation.matches(template, matchedGroup))
+      }
+
+    }
+
   }
 
 }
 
 object DerivationSpec {
+
+  def constant(value: String): Formula = {
+    Atom(Constant.build(value).get)
+  }
+
+  def variable(name: String): Formula = {
+    Atom(FormulaVariable(name))
+  }
+
+  def group(children: Formula*): Formula = {
+    Group.build(children).get
+  }
 
   def genTemplate: Gen[Formula] = {
     for {
