@@ -2,6 +2,8 @@ package net.cruhland.gentzen
 
 import FormulaGen._
 
+import org.scalacheck._
+
 class DerivationSpec extends GentzenSpec {
 
   property("a single formula variable matches any simple formula") {
@@ -33,6 +35,22 @@ class DerivationSpec extends GentzenSpec {
 }
 
 object DerivationSpec {
+
+  def genTemplate: Gen[Formula] = {
+    for {
+      // TODO: Rename `genFormula` to indicate that it's a simple formula only
+      formula <- FormulaGen.genFormula
+      atomGroups <- GenExtras.partition(countAtoms(formula))
+      templateAtoms <- GenExtras.tempGenAtoms(atomGroups)
+    } yield replaceAtoms(formula, templateAtoms)
+  }
+
+  def countAtoms(formula: Formula): Int = {
+    formula match {
+      case Atom(_) => 1
+      case Group(children) => children.map(countAtoms).sum
+    }
+  }
 
   // TODO: Clean up and combine with other functions to make template gen
   def replaceAtoms(f: Formula, atoms: List[AtomValue]): Formula = {
