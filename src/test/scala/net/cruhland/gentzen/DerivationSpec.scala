@@ -32,6 +32,18 @@ class DerivationSpec extends FreeSpec {
 
     }
 
+    "of a single variable atom with occurrence check" - {
+
+      "matches iff provided predicate matches" in {
+        val template = variable("A", "x")
+        val x = constant("x")
+        val y = constant("y")
+        assertResult(true)(Derivation.matches(template, x, varOccurs))
+        assertResult(false)(Derivation.matches(template, y, varOccurs))
+      }
+
+    }
+
     "of a group" - {
 
       "does not match a non-group" in {
@@ -105,11 +117,24 @@ object DerivationSpec {
   }
 
   def variable(name: String): Formula = {
-    Atom(FormulaVariable(name))
+    Atom(FormulaVariable(name, None))
+  }
+
+  def variable(name: String, checkVar: String): Formula = {
+    Atom(FormulaVariable(name, Some(checkVar)))
   }
 
   def group(children: Formula*): Formula = {
     Group.build(children).get
+  }
+
+  def varOccurs(formula: Formula, variable: String): Boolean = {
+    formula match {
+      case Atom(Constant(v)) => v == variable
+      case Group(children) =>
+        children.map(varOccurs(_, variable)).reduce(_ || _)
+      case _ => false
+    }
   }
 
   def genTemplate: Gen[Formula] = {

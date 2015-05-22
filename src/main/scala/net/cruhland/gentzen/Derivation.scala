@@ -2,28 +2,30 @@ package net.cruhland.gentzen
 
 object Derivation {
 
-  def matches(template: Formula, formula: Formula): Boolean = {
-    matchHelper(template, formula).isDefined
-  }
-
-  private[this] def matchHelper(
-    template: Formula, formula: Formula
-  ): Option[Map[String, Formula]] = {
-    (template, formula) match {
-      case (Atom(Constant(tv)), Atom(Constant(fv))) if tv == fv =>
-        Some(Map.empty)
-      case (Atom(FormulaVariable(variable)), _) =>
-        Some(Map(variable -> formula))
-      case (Group(tcn), Group(fcn)) if tcn.size == fcn.size =>
-        tcn.zip(fcn).map((matchHelper _).tupled).reduce { (left, right) =>
-          for {
-            leftVars <- left
-            rightVars <- right
-            mergedVars <- merge(leftVars, rightVars)
-          } yield mergedVars
-        }
-      case _ => None
+  def matches(
+    template: Formula,
+    formula: Formula,
+    varCheck: (Formula, String) => Boolean = (_, _) => false
+  ): Boolean = {
+    def helper(t: Formula, f: Formula): Option[Map[String, Formula]] = {
+      (t, f) match {
+        case (Atom(Constant(tv)), Atom(Constant(fv))) if tv == fv =>
+          Some(Map.empty)
+        case (Atom(FormulaVariable(fv, cv)), _) if cv.forall(varCheck(f, _)) =>
+          Some(Map(fv -> f))
+        case (Group(tcn), Group(fcn)) if tcn.size == fcn.size =>
+          tcn.zip(fcn).map((helper _).tupled).reduce { (left, right) =>
+            for {
+              leftVars <- left
+              rightVars <- right
+              mergedVars <- merge(leftVars, rightVars)
+            } yield mergedVars
+          }
+        case _ => None
+      }
     }
+
+    helper(template, formula).isDefined
   }
 
   private[this] def merge[A, B](
@@ -47,7 +49,8 @@ object Derivation {
 }
 
 sealed trait AtomValue
-case class FormulaVariable(name: String) extends AtomValue
+case class FormulaVariable(name: String, checkVar: Option[String])
+    extends AtomValue
 case class Constant private(value: String) extends AtomValue
 
 object Constant {

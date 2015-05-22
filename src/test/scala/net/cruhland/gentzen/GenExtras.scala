@@ -78,8 +78,9 @@ object GenExtras {
 
   // TODO: Move this into DerivationSpec once it's complete
   def tempGenAtoms(p: List[Int]): Gen[List[AtomValue]] = {
+    val buildVariable: String => FormulaVariable = FormulaVariable(_, None)
     val genAtomValueConstructor =
-      Gen.oneOf(FormulaVariable.apply _, Constant.buildWithoutValidation _)
+      Gen.oneOf(buildVariable, Constant.buildWithoutValidation _)
     val listOfGens = p.zipWithIndex.map {
       case (n, i) => genAtomValueConstructor.map(f => n -> f(i.toString))
     }
