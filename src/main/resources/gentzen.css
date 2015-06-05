@@ -1,8 +1,12 @@
 
-.line {
-    text-align: right;
+table {
+    border: thin solid black;
 }
 
-.what {
-    text-align: center;
+td {
+    border: thin solid black;
+}
+
+th {
+    border: thin solid black;
 }

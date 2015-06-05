@@ -1,29 +1,15 @@
 <!DOCTYPE html>
-
 <html>
   <head>
-    <title>Gentzen</title>
-    <link rel="stylesheet" href="gentzen.css">
+    <title>Gentzen proof assistant</title>
+    <link href="gentzen.css" rel="stylesheet">
   </head>
   <body>
-    <table border="1">
+    <table id="theTable">
       <thead>
-        <tr>
-          <th>Line</th>
-          <th>What</th>
-          <th>Why</th>
-        </tr>
+        <tr><th>ID</th><th>Formula</th><th>Reason</th></tr>
       </thead>
-      <tr>
-        <td class="line">1</td>
-        <td class="what">∀ b (∀ c (a \ b) ∧ (b \ c) → (a \ c))</td>
-        <td></td>
-      </tr>
-      <tr>
-        <td class="line">2</td>
-        <td class="what">∀ a (∀ b (∀ c (a \ b) ∧ (b \ c) → (a \ c)))</td>
-        <td>∀I 1</td>
-      </tr>
     </table>
+    <script src="gentzen.js"></script>
   </body>
 </html>
