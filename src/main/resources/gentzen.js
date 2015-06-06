@@ -3,7 +3,18 @@
 var proofRows = [];
 
 // TODO Don't use a global
-var proofTBody = document.getElementById("theTable").createTBody();
+var proofTable = document.getElementById("theTable");
+
+var escapingDiv = document.createElement("div");
+
+proofTable.addEventListener("change", function (changeEvent) {
+    // TODO May be a security risk -- also annoying to type HTML entities
+    escapingDiv.innerHTML = changeEvent.target.value;
+    changeEvent.target.value = escapingDiv.innerHTML;
+});
+
+// TODO Don't use a global
+var proofTBody = proofTable.createTBody();
 
 function makeProofLine(formulaText, reasonText) {
     formulaText = formulaText || "";
