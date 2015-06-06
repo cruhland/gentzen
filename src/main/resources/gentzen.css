@@ -1,12 +1,32 @@
 
 table {
     border: thin solid black;
+    border-collapse: collapse;
+    width: 75%;
+
+    /* center table on page */
+    margin-left: auto;
+    margin-right: auto;
 }
 
-td {
+td, th {
     border: thin solid black;
+
+    /* hide overflow of wide formula input box */
+    overflow: hidden;
 }
 
-th {
-    border: thin solid black;
+.formula {
+    /* we want as much space as possible to show long formulas */
+    width: 100%;
+}
+
+/* indicate to the user what they can't edit */
+.noneditable {
+    background: lightgray;
+}
+
+input {
+    /* the table already provides a good border */
+    border: hidden;
 }

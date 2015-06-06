@@ -5,9 +5,9 @@ var proofRows = [];
 // TODO Don't use a global
 var proofTBody = document.getElementById("theTable").createTBody();
 
-function makeProofLine(formulaHtml, reasonHtml) {
-    formulaHtml = formulaHtml || "";
-    reasonHtml = reasonHtml || "";
+function makeProofLine(formulaText, reasonText) {
+    formulaText = formulaText || "";
+    reasonText = reasonText || "";
     
     var newId = proofRows.length;
     var row = document.createElement("tr");
@@ -16,16 +16,16 @@ function makeProofLine(formulaHtml, reasonHtml) {
     var idCell = row.insertCell();
     idCell.innerText = newId;
 
-    appendTextInput(row.insertCell(), formulaHtml);
-    appendTextInput(row.insertCell(), reasonHtml);
+    var formulaInput = document.createElement("input");
+    formulaInput.className = "formula";
+    formulaInput.value = formulaText;
+    row.insertCell().appendChild(formulaInput);
+
+    var reasonInput = document.createElement("input");
+    reasonInput.value = reasonText;
+    row.insertCell().appendChild(reasonInput);
 
     return newId;
-}
-
-function appendTextInput(element, value) {
-    var input = document.createElement("input");
-    input.value = value;
-    element.appendChild(input);
 }
 
 function moveAbove(topRow, botRow) {
