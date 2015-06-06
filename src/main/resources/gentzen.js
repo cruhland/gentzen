@@ -13,7 +13,9 @@ function makeProofLine(formulaHtml, reasonHtml) {
     var row = document.createElement("tr");
     proofRows[newId] = row;
 
-    appendTextInput(row.insertCell(), newId);
+    var idCell = row.insertCell();
+    idCell.innerText = newId;
+
     appendTextInput(row.insertCell(), formulaHtml);
     appendTextInput(row.insertCell(), reasonHtml);
 
