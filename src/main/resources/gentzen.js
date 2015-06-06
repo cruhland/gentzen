@@ -13,16 +13,17 @@ function makeProofLine(formulaHtml, reasonHtml) {
     var row = document.createElement("tr");
     proofRows[newId] = row;
 
-    var idCell = row.insertCell();
-    idCell.innerText = newId;
-
-    var formulaCell = row.insertCell();
-    formulaCell.innerHTML = formulaHtml;
-
-    var reasonCell = row.insertCell();
-    reasonCell.innerHTML = reasonHtml;
+    appendTextInput(row.insertCell(), newId);
+    appendTextInput(row.insertCell(), formulaHtml);
+    appendTextInput(row.insertCell(), reasonHtml);
 
     return newId;
+}
+
+function appendTextInput(element, value) {
+    var input = document.createElement("input");
+    input.value = value;
+    element.appendChild(input);
 }
 
 function moveAbove(topRow, botRow) {
