@@ -16,6 +16,9 @@ proofTable.addEventListener("change", function (changeEvent) {
 // TODO Don't use a global
 var proofTBody = proofTable.createTBody();
 
+var startLine = makeProofLine();
+moveAbove(startLine, -1);
+
 function makeProofLine(formulaText, reasonText) {
     formulaText = formulaText || "";
     reasonText = reasonText || "";
@@ -41,6 +44,23 @@ function makeProofLine(formulaText, reasonText) {
 
 function moveAbove(topRow, botRow) {
     proofTBody.insertBefore(proofRows[topRow], proofRows[botRow]);
+}
+
+function duplicateFocusedRow() {
+    var focused = document.activeElement;
+    if (focused.nodeName !== "INPUT") return;
+
+    var row = focused.parentElement.parentElement;
+    if (row.nodeName !== "TR") return;
+
+    var rowId = Number(row.children[0].innerText);
+    if (Number.isNaN(rowId)) return;
+
+    var formula = row.children[1].children[0].value;
+    var reason = row.children[2].children[0].value;
+    var newId = makeProofLine(formula, reason);
+
+    moveAbove(newId, rowId);
 }
 
 function setFormula(row, formulaHtml) {
