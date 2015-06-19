@@ -33,10 +33,17 @@ function makeProofLine(formulaText, reasonText) {
     var formulaInput = document.createElement("input");
     formulaInput.className = "formula";
     formulaInput.value = formulaText;
+    formulaInput.addEventListener("focus", function () {
+        lastFocusedInput = formulaInput;
+    });
+
     row.insertCell().appendChild(formulaInput);
 
     var reasonInput = document.createElement("input");
     reasonInput.value = reasonText;
+    reasonInput.addEventListener("focus", function () {
+        lastFocusedInput = reasonInput;
+    });
     row.insertCell().appendChild(reasonInput);
 
     return newId;
@@ -46,8 +53,11 @@ function moveAbove(topRow, botRow) {
     proofTBody.insertBefore(proofRows[topRow], proofRows[botRow]);
 }
 
+// TODO Don't use globals
+var lastFocusedInput = null;
+
 function duplicateFocusedRow() {
-    var focused = document.activeElement;
+    var focused = lastFocusedInput;
     if (focused.nodeName !== "INPUT") return;
 
     var row = focused.parentElement.parentElement;
