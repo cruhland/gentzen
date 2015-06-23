@@ -5,9 +5,16 @@
     <link href="gentzen.css" rel="stylesheet">
   </head>
   <body>
-    <button type="button" onclick="duplicateFocusedRow();">
-      Duplicate line
-    </button>
+    <p>
+      <button type="button" onclick="duplicateFocusedRow();">
+        Duplicate line
+      </button>
+    </p>
+    <p>
+      <input id="saveFile" type="text">
+      <button type="button" onclick="saveProof();">Save proof</button>
+    </p>
+
     <table id="theTable">
       <colgroup>
         <col class="noneditable"><col class="formula"><col>
@@ -16,6 +23,8 @@
         <tr><th>ID</th><th>Formula</th><th>Reason</th></tr>
       </thead>
     </table>
+
+    <script src="FileSaver.min.js"></script>
     <script src="gentzen.js"></script>
   </body>
 </html>

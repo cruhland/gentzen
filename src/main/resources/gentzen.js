@@ -80,3 +80,31 @@ function setFormula(row, formulaHtml) {
 function setReason(row, reasonHtml) {
     proofRows[row].children[2].innerHTML = reasonHtml;
 }
+
+function extractProof() {
+    var rows = proofTBody.children;
+    var proof = [];
+    for (var i = 0; i < rows.length; i++) {
+        var cols = rows[i].children;
+        var id = cols[0].innerText;
+        var formula = cols[1].firstElementChild.value;
+        var reason = cols[2].firstElementChild.value;
+        proof.push([id, formula, reason]);
+    }
+
+    return proof;
+}
+
+function saveProof() {
+    var proof = extractProof();
+
+    var proofJson = JSON.stringify(proof);
+    var blob = new Blob([proofJson], {type: "application/json;charset=utf-8"});
+
+    var saveFile = document.getElementById("saveFile").value;
+    if (saveFile) {
+        saveAs(blob, saveFile);
+    } else {
+        console.log("Invalid file name for saving proof");
+    }
+}
