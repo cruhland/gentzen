@@ -108,3 +108,24 @@ function saveProof() {
         console.log("Invalid file name for saving proof");
     }
 }
+
+function loadProof(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+
+    var fileReader = new FileReader();
+
+    fileReader.onload = function () {
+        console.log(fileReader.result);
+    };
+    fileReader.onerror = function () {
+        var error = fileReader.error;
+        alert("A " + error.name + " occurred when reading " + file.name +
+              ": " + error.message);
+    };
+
+    fileReader.readAsText(file);
+}
+
+var loadFile = document.getElementById("loadFile");
+loadFile.addEventListener("change", loadProof);
