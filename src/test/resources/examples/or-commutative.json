@@ -1,0 +1,1 @@
+[["4","p","Assumption for 2"],["3","q","Assumption for 2"],["1","p ∨ q","Assumption for 0"],["6","q ∨ p","∨I_R 4"],["5","q ∨ p","∨I_L 3"],["2","q ∨ p","∨E 1, 6, 5"],["0","(p ∨ q) → (q ∨ p)","→I 1, 2"]]

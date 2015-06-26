@@ -1,0 +1,1 @@
+[["1","Nat 0","Nat-0"],["2","∀ n ((Nat n) → (Nat (S n)))","Nat-S"],["3","¬(∃ n ((S n) = 0))","Nat-0-base"],["4","∀ m (∀ n ((((Nat m) ∧ (Nat n)) → (((S m) = (S n)) → (m = n))))","Nat-S-injective"],["5","∀ P (((P 0) ∧ (∀ k ((Nat k) → ((P k) → (P (S k)))))) → (∀ n ((Nat n) → (P n))))","Nat-induction"],["0","",""]]
