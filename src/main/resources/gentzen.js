@@ -19,32 +19,37 @@ var proofTBody = proofTable.createTBody();
 var startLine = makeProofLine();
 moveAbove(startLine, -1);
 
-function makeProofLine(formulaText, reasonText) {
-    formulaText = formulaText || "";
-    reasonText = reasonText || "";
-    
-    var newId = proofRows.length;
+function newProofLine(id, formula, reason) {
     var row = document.createElement("tr");
-    proofRows[newId] = row;
 
     var idCell = row.insertCell();
-    idCell.innerText = newId;
+    idCell.innerText = id;
 
     var formulaInput = document.createElement("input");
     formulaInput.className = "formula";
-    formulaInput.value = formulaText;
+    formulaInput.value = formula;
     formulaInput.addEventListener("focus", function () {
         lastFocusedInput = formulaInput;
     });
-
     row.insertCell().appendChild(formulaInput);
 
     var reasonInput = document.createElement("input");
-    reasonInput.value = reasonText;
+    reasonInput.value = reason;
     reasonInput.addEventListener("focus", function () {
         lastFocusedInput = reasonInput;
     });
     row.insertCell().appendChild(reasonInput);
+
+    return row;
+}
+
+function makeProofLine(formulaText, reasonText) {
+    formulaText = formulaText || "";
+    reasonText = reasonText || "";
+
+    var newId = proofRows.length;
+    var row = newProofLine(newId, formulaText, reasonText);
+    proofRows[newId] = row;
 
     return newId;
 }
@@ -116,8 +121,23 @@ function loadProof(event) {
     var fileReader = new FileReader();
 
     fileReader.onload = function () {
-        console.log(fileReader.result);
+        // TODO error handling
+        var proofData = JSON.parse(fileReader.result);
+
+        proofTBody.innerHTML = '';
+        proofRows = [];
+        for (var i = 0; i < proofData.length; i++) {
+            var rowData = proofData[i];
+            var id = Number(rowData[0]);
+            var formula = rowData[1];
+            var reason = rowData[2];
+
+            var row = newProofLine(id, formula, reason);
+            proofTBody.appendChild(row);
+            proofRows[id] = row;
+        }
     };
+
     fileReader.onerror = function () {
         var error = fileReader.error;
         alert("A " + error.name + " occurred when reading " + file.name +
