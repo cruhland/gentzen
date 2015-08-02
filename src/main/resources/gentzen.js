@@ -1,161 +1,159 @@
 
-// TODO Don't use a global
-var proofRows = [];
+(function () {
+    var proofRows = [];
 
-// TODO Don't use a global
-var duplicateLineButton = document.getElementById("duplicateLine");
+    var duplicateLineButton = document.getElementById("duplicateLine");
 
-duplicateLineButton.addEventListener("click", duplicateFocusedRow);
+    duplicateLineButton.addEventListener("click", duplicateFocusedRow);
 
-// TODO Don't use a global
-var saveProofButton = document.getElementById("saveButton");
+    var saveProofButton = document.getElementById("saveButton");
 
-saveProofButton.addEventListener("click", saveProof);
+    saveProofButton.addEventListener("click", saveProof);
 
-// TODO Don't use a global
-var proofTable = document.getElementById("theTable");
+    var proofTable = document.getElementById("theTable");
 
-var escapingDiv = document.createElement("div");
+    var escapingDiv = document.createElement("div");
 
-proofTable.addEventListener("change", function (changeEvent) {
-    // TODO May be a security risk -- also annoying to type HTML entities
-    escapingDiv.innerHTML = changeEvent.target.value;
-    changeEvent.target.value = escapingDiv.innerHTML;
-});
-
-// TODO Don't use a global
-var proofTBody = proofTable.createTBody();
-
-var startLine = makeProofLine();
-moveAbove(startLine, -1);
-
-function newProofLine(id, formula, reason) {
-    var row = document.createElement("tr");
-
-    var idCell = row.insertCell();
-    idCell.innerText = id;
-
-    var formulaInput = document.createElement("input");
-    formulaInput.className = "formula";
-    formulaInput.value = formula;
-    formulaInput.addEventListener("focus", function () {
-        lastFocusedInput = formulaInput;
+    proofTable.addEventListener("change", function (changeEvent) {
+        // TODO May be a security risk -- also annoying to type HTML entities
+        escapingDiv.innerHTML = changeEvent.target.value;
+        changeEvent.target.value = escapingDiv.innerHTML;
     });
-    row.insertCell().appendChild(formulaInput);
 
-    var reasonInput = document.createElement("input");
-    reasonInput.value = reason;
-    reasonInput.addEventListener("focus", function () {
-        lastFocusedInput = reasonInput;
-    });
-    row.insertCell().appendChild(reasonInput);
+    var proofTBody = proofTable.createTBody();
 
-    return row;
-}
+    var startLine = makeProofLine();
+    moveAbove(startLine, -1);
 
-function makeProofLine(formulaText, reasonText) {
-    formulaText = formulaText || "";
-    reasonText = reasonText || "";
+    function newProofLine(id, formula, reason) {
+        var row = document.createElement("tr");
 
-    var newId = proofRows.length;
-    var row = newProofLine(newId, formulaText, reasonText);
-    proofRows[newId] = row;
+        var idCell = row.insertCell();
+        idCell.innerText = id;
 
-    return newId;
-}
+        var formulaInput = document.createElement("input");
+        formulaInput.className = "formula";
+        formulaInput.value = formula;
+        formulaInput.addEventListener("focus", function () {
+            lastFocusedInput = formulaInput;
+        });
+        row.insertCell().appendChild(formulaInput);
 
-function moveAbove(topRow, botRow) {
-    proofTBody.insertBefore(proofRows[topRow], proofRows[botRow]);
-}
+        var reasonInput = document.createElement("input");
+        reasonInput.value = reason;
+        reasonInput.addEventListener("focus", function () {
+            lastFocusedInput = reasonInput;
+        });
+        row.insertCell().appendChild(reasonInput);
 
-// TODO Don't use globals
-var lastFocusedInput = null;
-
-function duplicateFocusedRow() {
-    var focused = lastFocusedInput;
-    if (focused.nodeName !== "INPUT") return;
-
-    var row = focused.parentElement.parentElement;
-    if (row.nodeName !== "TR") return;
-
-    var rowId = Number(row.children[0].innerText);
-    if (Number.isNaN(rowId)) return;
-
-    var formula = row.children[1].children[0].value;
-    var reason = row.children[2].children[0].value;
-    var newId = makeProofLine(formula, reason);
-
-    moveAbove(newId, rowId);
-}
-
-function setFormula(row, formulaHtml) {
-    proofRows[row].children[1].innerHTML = formulaHtml;
-}
-
-function setReason(row, reasonHtml) {
-    proofRows[row].children[2].innerHTML = reasonHtml;
-}
-
-function extractProof() {
-    var rows = proofTBody.children;
-    var proof = [];
-    for (var i = 0; i < rows.length; i++) {
-        var cols = rows[i].children;
-        var id = cols[0].innerText;
-        var formula = cols[1].firstElementChild.value;
-        var reason = cols[2].firstElementChild.value;
-        proof.push([id, formula, reason]);
+        return row;
     }
 
-    return proof;
-}
+    function makeProofLine(formulaText, reasonText) {
+        formulaText = formulaText || "";
+        reasonText = reasonText || "";
 
-function saveProof() {
-    var proof = extractProof();
+        var newId = proofRows.length;
+        var row = newProofLine(newId, formulaText, reasonText);
+        proofRows[newId] = row;
 
-    var proofJson = JSON.stringify(proof);
-    var blob = new Blob([proofJson], {type: "application/json;charset=utf-8"});
-
-    var saveFile = document.getElementById("saveFile").value;
-    if (saveFile) {
-        saveAs(blob, saveFile);
-    } else {
-        console.log("Invalid file name for saving proof");
+        return newId;
     }
-}
 
-function loadProof(event) {
-    var file = event.target.files[0];
-    if (!file) return;
+    function moveAbove(topRow, botRow) {
+        proofTBody.insertBefore(proofRows[topRow], proofRows[botRow]);
+    }
 
-    var fileReader = new FileReader();
+    var lastFocusedInput = null;
 
-    fileReader.onload = function () {
-        // TODO error handling
-        var proofData = JSON.parse(fileReader.result);
+    function duplicateFocusedRow() {
+        var focused = lastFocusedInput;
+        if (focused.nodeName !== "INPUT") return;
 
-        proofTBody.innerHTML = '';
-        proofRows = [];
-        for (var i = 0; i < proofData.length; i++) {
-            var rowData = proofData[i];
-            var id = Number(rowData[0]);
-            var formula = rowData[1];
-            var reason = rowData[2];
+        var row = focused.parentElement.parentElement;
+        if (row.nodeName !== "TR") return;
 
-            var row = newProofLine(id, formula, reason);
-            proofTBody.appendChild(row);
-            proofRows[id] = row;
+        var rowId = Number(row.children[0].innerText);
+        if (Number.isNaN(rowId)) return;
+
+        var formula = row.children[1].children[0].value;
+        var reason = row.children[2].children[0].value;
+        var newId = makeProofLine(formula, reason);
+
+        moveAbove(newId, rowId);
+    }
+
+    function setFormula(row, formulaHtml) {
+        proofRows[row].children[1].innerHTML = formulaHtml;
+    }
+
+    function setReason(row, reasonHtml) {
+        proofRows[row].children[2].innerHTML = reasonHtml;
+    }
+
+    function extractProof() {
+        var rows = proofTBody.children;
+        var proof = [];
+        for (var i = 0; i < rows.length; i++) {
+            var cols = rows[i].children;
+            var id = cols[0].innerText;
+            var formula = cols[1].firstElementChild.value;
+            var reason = cols[2].firstElementChild.value;
+            proof.push([id, formula, reason]);
         }
-    };
 
-    fileReader.onerror = function () {
-        var error = fileReader.error;
-        alert("A " + error.name + " occurred when reading " + file.name +
-              ": " + error.message);
-    };
+        return proof;
+    }
 
-    fileReader.readAsText(file);
-}
+    function saveProof() {
+        var proof = extractProof();
 
-var loadFile = document.getElementById("loadFile");
-loadFile.addEventListener("change", loadProof);
+        var proofJson = JSON.stringify(proof);
+        var blob = new Blob(
+            [proofJson], {type: "application/json;charset=utf-8"}
+        );
+
+        var saveFile = document.getElementById("saveFile").value;
+        if (saveFile) {
+            saveAs(blob, saveFile);
+        } else {
+            console.log("Invalid file name for saving proof");
+        }
+    }
+
+    function loadProof(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+
+        var fileReader = new FileReader();
+
+        fileReader.onload = function () {
+            // TODO error handling
+            var proofData = JSON.parse(fileReader.result);
+
+            proofTBody.innerHTML = '';
+            proofRows = [];
+            for (var i = 0; i < proofData.length; i++) {
+                var rowData = proofData[i];
+                var id = Number(rowData[0]);
+                var formula = rowData[1];
+                var reason = rowData[2];
+
+                var row = newProofLine(id, formula, reason);
+                proofTBody.appendChild(row);
+                proofRows[id] = row;
+            }
+        };
+
+        fileReader.onerror = function () {
+            var error = fileReader.error;
+            alert("A " + error.name + " occurred when reading " + file.name +
+                  ": " + error.message);
+        };
+
+        fileReader.readAsText(file);
+    }
+
+    var loadFile = document.getElementById("loadFile");
+    loadFile.addEventListener("change", loadProof);
+})();
