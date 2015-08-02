@@ -1,19 +1,15 @@
 
 (function () {
-    var proofRows = [];
-
     var duplicateLineButton = document.getElementById("duplicateLine");
-
-    duplicateLineButton.addEventListener("click", duplicateFocusedRow);
-
     var saveProofButton = document.getElementById("saveButton");
 
+    duplicateLineButton.addEventListener("click", duplicateFocusedRow);
     saveProofButton.addEventListener("click", saveProof);
 
     var proofTable = document.getElementById("theTable");
-
     var escapingDiv = document.createElement("div");
 
+    // Replace HTML entities with their Unicode chars after edits are made
     proofTable.addEventListener("change", function (changeEvent) {
         // TODO May be a security risk -- also annoying to type HTML entities
         escapingDiv.innerHTML = changeEvent.target.value;
@@ -21,11 +17,12 @@
     });
 
     var proofTBody = proofTable.createTBody();
+    var proofRows = [];
 
     var startLine = makeProofLine();
     moveAbove(startLine, -1);
 
-    function newProofLine(id, formula, reason) {
+    function makeTableRow(id, formula, reason) {
         var row = document.createElement("tr");
 
         var idCell = row.insertCell();
@@ -54,7 +51,7 @@
         reasonText = reasonText || "";
 
         var newId = proofRows.length;
-        var row = newProofLine(newId, formulaText, reasonText);
+        var row = makeTableRow(newId, formulaText, reasonText);
         proofRows[newId] = row;
 
         return newId;
@@ -81,14 +78,6 @@
         var newId = makeProofLine(formula, reason);
 
         moveAbove(newId, rowId);
-    }
-
-    function setFormula(row, formulaHtml) {
-        proofRows[row].children[1].innerHTML = formulaHtml;
-    }
-
-    function setReason(row, reasonHtml) {
-        proofRows[row].children[2].innerHTML = reasonHtml;
     }
 
     function extractProof() {
@@ -139,7 +128,7 @@
                 var formula = rowData[1];
                 var reason = rowData[2];
 
-                var row = newProofLine(id, formula, reason);
+                var row = makeTableRow(id, formula, reason);
                 proofTBody.appendChild(row);
                 proofRows[id] = row;
             }
