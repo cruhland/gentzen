@@ -8,6 +8,11 @@ var duplicateLineButton = document.getElementById("duplicateLine");
 duplicateLineButton.addEventListener("click", duplicateFocusedRow);
 
 // TODO Don't use a global
+var saveProofButton = document.getElementById("saveButton");
+
+saveProofButton.addEventListener("click", saveProof);
+
+// TODO Don't use a global
 var proofTable = document.getElementById("theTable");
 
 var escapingDiv = document.createElement("div");
